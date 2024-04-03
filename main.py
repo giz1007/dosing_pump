@@ -10,7 +10,8 @@ import ntptime
 
 
 #if needed, overwrite default time server
-ntptime.host = "0.uk.pool.ntp.org"
+ntptime.host="192.168.10.52"  # Server address.
+ntptime.time() # this queries the time from an NTP server
 
 firmware_url = "https://raw.githubusercontent.com/giz1007/dosing_pump/main/"
 
@@ -47,7 +48,7 @@ DEFAULT_CALIBRATIONS = {
 #format timestamp for message to broker
 def format_timestamp(timestamp):
     # Convert timestamp to a tuple representing local time
-    time_tuple = utime.localtime(timestamp)
+    time_tuple = timestamp
 
     # Format the time tuple as a string
     time_str = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(
@@ -162,7 +163,7 @@ def publish_working_status():
         #current_timestamp = utime.time()  # Get the current timestamp
         #formatted_time = format_timestamp(current_timestamp)
         #status_message = f"{formatted_time},ok"
-        status_message = ("Local Time: %s" %str(time.localtime()))
+        status_message = ("Local Time: %s" %str(format_timestamp(time.localtime())))
         mqtt_client.publish(f"{MQTT_TOPIC_PREFIX}/{MQTT_TOPIC_WATCHDOG}", status_message)
         print(f"Published status message: {status_message}")
     except Exception as e:
@@ -173,7 +174,7 @@ def publish_pump_run_info(pump_name, calibration_value, volume_requested, dose_t
     try:
         #timestamp = utime.time()
         #formatted_time = format_timestamp(timestamp)
-        formatted_time = ("Time: %s" %str(time.localtime()))
+        formatted_time = ("Time: %s" %str(format_timestamp(time.localtime())))
         info_dict = {
             "timestamp": formatted_time,
             "pump_name": pump_name,
@@ -317,25 +318,21 @@ try:
         mqtt_client.check_msg()      
         # Increment the counter every second over 1 hour to check if its working.
         hour_counter += 1
-
+        
         # Check if an hour has passed
-        if hour_counter >= 30:  # 3600 seconds in an hour, so check every 10 minutes
+        if hour_counter >= 10:  # 3600 seconds in an hour, so check every 10 minutes
             publish_working_status()  # Publish the working status
             hour_counter = 0  # Reset the hour_counter
 
         time.sleep(1)
         print(hour_counter)
         update_triggered = read_update()
-        print({update_triggered})
+        #print(update_triggered)
         if update_triggered == 1:
             write_update("0")
             ota_updater = OTAUpdater(SSID, PASSWORD, firmware_url, "main.py")
-            ota_updater.download_and_install_update_if_available()
-        
-        
+            ota_updater.download_and_install_update_if_available()      
         
 except KeyboardInterrupt:
     print("Keyboard interrupt. Disconnecting from MQTT broker.")
     mqtt_client.disconnect()
-
-
