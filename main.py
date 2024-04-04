@@ -321,6 +321,7 @@ try:
         
         # Check if an hour has passed
         if hour_counter >= 10:  # 3600 seconds in an hour, so check every 10 minutes
+            ntptime.time() # this queries the time from an NTP server
             publish_working_status()  # Publish the working status
             hour_counter = 0  # Reset the hour_counter
 
